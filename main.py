@@ -11,8 +11,11 @@ def p_pro(op, x, p, c, t):
             print("Error: Datos inválidos.")
             return False
         
-        # Hardcoding: IVA del 15% quemado directamente en el bucle/lógica
-        iva = p * 0.15
+        # IVA condicional por categoría
+        if t == "Tecnología":
+            iva = p * 0.12 # IVA especifico para Tecnología
+        else:
+            iva = p * 0.15 # IVA general para otros productos
         total_con_iva = p + iva
         
         # Lógica de descuento repetida e idéntica (Código duplicado)
@@ -51,7 +54,7 @@ def p_pro(op, x, p, c, t):
             pf1 = float(datos1[4])
             print(f"{x1} | ${p1} | {c1} unidades | {t1} | ${pf1}")
             if c1 < 5:
-                print(f"  -> ATENCIÓN: Stock bajo para {x1} ({c1} unidades restantes).")
+                print(f"  -> ALERTA: Stock bajo para {x1} ({c1} unidades restantes).")
         print("--------------------------------------------------")
 
     elif op == 3:
@@ -65,8 +68,12 @@ def p_pro(op, x, p, c, t):
         for l in lineas:
             datos2 = l.strip().split(",")
             precio_base = float(datos2[1])
-            # Repetición del cálculo del IVA del 15% (Hardcoded)
-            iva_repetido = precio_base * 0.15
+            categoria = datos2[3]
+            # IVA condicional que hacemos de nuevo para el reporte
+            if categoria == "Tecnología":
+                iva_repetido = precio_base * 0.12
+            else:
+                iva_repetido = precio_base * 0.15
             sumatoria += iva_repetido
         print(f"Total de IVA acumulado en inventario: ${sumatoria}")
 
