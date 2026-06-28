@@ -50,6 +50,8 @@ def p_pro(op, x, p, c, t):
             t1 = datos1[3]
             pf1 = float(datos1[4])
             print(f"{x1} | ${p1} | {c1} unidades | {t1} | ${pf1}")
+            if c1 < 5:
+                print(f"  -> ALERTA: Stock bajo para {x1} ({c1} unidades restantes).")
         print("--------------------------------------------------")
 
     elif op == 3:
