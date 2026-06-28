@@ -4,11 +4,11 @@ import json
 # Archivo de texto para persistencia de datos
 A = "datos_inv.json"
 
-def p_pro(op, x, p, c, t):
+def p_pro(op, codigo_barras, x, p, c, t):
     # Función gigante que hace absolutamente todo: valida, calcula, escribe y formatea
     if op == 1:
         # VALIDACIÓN Y REGISTRO DE PRODUCTO
-        if x == "" or p <= 0 or c < 0:
+        if codigo_barras == "" or x == "" or p <= 0 or c < 0:
             print("Error: Datos invalidos.")
             return False
         
@@ -33,6 +33,7 @@ def p_pro(op, x, p, c, t):
                 productos = json.load(f)
         
         nuevo_producto = {
+            "codigo_barras": codigo_barras,
             "nombre": x,
             "precio": p,
             "stock": c,
@@ -55,16 +56,18 @@ def p_pro(op, x, p, c, t):
             productos = json.load(f)
             
         print("--------------------------------------------------")
-        print("PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
+        print("COD_BARRAS | PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
         print("--------------------------------------------------")
         for prod in productos:
             # Acceso a datos por clave, mucho más claro
+            # Se usa .get() para compatibilidad con datos antiguos que no tengan el campo
+            cod1 = prod.get("codigo_barras", "N/A")
             x1 = prod["nombre"]
             p1 = prod["precio"]
             c1 = prod["stock"]
             t1 = prod["categoria"]
             pf1 = prod["precio_final"]
-            print(f"{x1} | ${p1} | {c1} unidades | {t1} | ${round(pf1, 2)}")
+            print(f"{cod1} | {x1} | ${p1} | {c1} unidades | {t1} | ${round(pf1, 2)}")
             if c1 < 5:
                 print(f"  -> ALERTA: Stock bajo para {x1} ({c1} unidades restantes).")
         print("--------------------------------------------------")
@@ -92,11 +95,11 @@ def p_pro(op, x, p, c, t):
 if __name__ == "__main__":
     print("--- SISTEMA DE INVENTARIO VIEJO V1.0 ---")
     # Registrar un par de productos de prueba
-    p_pro(1, "Laptop", 800.0, 5, "Tecnologia")
-    p_pro(1, "Cuaderno", 2.50, 50, "Utiles")
+    p_pro(1, "7501031311309", "Laptop", 800.0, 5, "Tecnologia")
+    p_pro(1, "7501055301845", "Cuaderno", 2.50, 50, "Utiles")
     
     # Listar productos
-    p_pro(2, "", 0, 0, "")
+    p_pro(2, "", "", 0, 0, "")
     
     # Ver reporte de IVA
-    p_pro(3, "", 0, 0, "")
+    p_pro(3, "", "", 0, 0, "")
