@@ -1,13 +1,31 @@
 import os
+import json
 
-# Archivo de texto para persistencia de datos
-ARCHIVO_DATOS = "datos_inv.txt"
+# Cambiamos el archivo de persistencia a formato JSON
+ARCHIVO_DATOS = "datos_inv.json"
 
 def calcular_iva(precio, categoria):
     """Centraliza la regla de negocio del IVA según la categoría."""
     if categoria == "Tecnología":
         return precio * 0.12  # 12% para Tecnología
     return precio * 0.15      # 15% general para el resto
+
+
+def leer_datos_json():
+    """Función utilitaria para leer de forma segura el archivo JSON."""
+    if not os.path.exists(ARCHIVO_DATOS):
+        return []  # Si no existe, retornamos una lista vacía
+    try:
+        with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return []  # Si el archivo está corrupto o vacío, retornamos lista vacía
+
+
+def guardar_datos_json(datos):
+    """Función utilitaria para escribir la estructura completa en el JSON."""
+    with open(ARCHIVO_DATOS, "w", encoding="utf-8") as f:
+        json.dump(datos, f, indent=4, ensure_ascii=False)
 
 
 def p_pro(op, x, p, c, t):
@@ -18,80 +36,76 @@ def p_pro(op, x, p, c, t):
             print("Error: Datos inválidos.")
             return False
         
-        # Aplicamos la nueva regla de IVA centralizada
+        # Aplicamos la regla de IVA
         iva = calcular_iva(p, t)
         total_con_iva = p + iva
         
         # Lógica de descuento
         if t == "Tecnología":
-            # 10% de descuento para tecnología
             p_final = total_con_iva - (total_con_iva * 0.10)
         else:
             p_final = total_con_iva
             
-        linea = f"{x},{p},{c},{t},{p_final}\n"
+        # Creamos una estructura de diccionario limpia para el JSON
+        nuevo_producto = {
+            "producto": x,
+            "precio_base": p,
+            "stock": c,
+            "categoria": t,
+            "precio_final": round(p_final, 2)
+        }
         
-        # Escritura directa en archivo plano
-        with open(ARCHIVO_DATOS, "a") as f:
-            f.write(linea)
-        print("Producto guardado con éxito.")
+        # Leemos el estado actual, añadimos el nuevo item y guardamos
+        inventario = leer_datos_json()
+        inventario.append(nuevo_producto)
+        guardar_datos_json(inventario)
+        
+        print("Producto guardado con éxito en formato JSON.")
         
     elif op == 2:
         # LECTURA Y DESPLIEGUE EN TABLA
-        if not os.path.exists(ARCHIVO_DATOS):
+        inventario = leer_datos_json()
+        if not inventario:
             print("No hay datos registrados.")
             return
         
-        with open(ARCHIVO_DATOS, "r") as f:
-            lineas = f.readlines()
-            
         print("--------------------------------------------------")
         print("PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
         print("--------------------------------------------------")
-        for l in lineas:
-            datos1 = l.strip().split(",")
-            x1 = datos1[0]
-            p1 = float(datos1[1])
-            c1 = int(datos1[2])
-
-            if c1 < 5:
-                print("Stock menor a 5")
-            t1 = datos1[3]
-            pf1 = float(datos1[4])
-            print(f"{x1} | ${p1} | {c1} unidades | {t1} | ${pf1}")
+        for item in inventario:
+            # Ahora accedemos por llaves legibles en lugar de índices numéricos (datos[0])
+            if item["stock"] < 5:
+                print(f"⚠️ Alerta: Stock de '{item['producto']}' menor a 5 unidades")
+                
+            print(f"{item['producto']} | ${item['precio_base']} | {item['stock']} unidades | {item['categoria']} | ${item['precio_final']}")
         print("--------------------------------------------------")
 
     elif op == 3:
-        # REPORTES (Usa la misma función centralizada de IVA)
-        if not os.path.exists(ARCHIVO_DATOS):
+        # REPORTES
+        inventario = leer_datos_json()
+        if not inventario:
+            print("No hay datos en el inventario para generar reportes.")
             return
-        with open(ARCHIVO_DATOS, "r") as f:
-            lineas = f.readlines()
         
         sumatoria = 0
-        for l in lineas:
-            datos2 = l.strip().split(",")
-            precio_base = float(datos2[1])
-            categoria = datos2[3]
-            
-            # Llamamos a la función centralizada para evitar discrepancias
-            iva_correcto = calcular_iva(precio_base, categoria)
+        for item in inventario:
+            # Usamos la función de IVA mapeando los datos del JSON
+            iva_correcto = calcular_iva(item["precio_base"], item["categoria"])
             sumatoria += iva_correcto
             
         print(f"Total de IVA acumulado en inventario: ${sumatoria:.2f}")
 
 # Simulación de ejecución del programa
 if __name__ == "__main__":
-    print("--- SISTEMA DE INVENTARIO ACTUALIZADO V1.1 ---")
+    print("--- SISTEMA DE INVENTARIO JSON V1.2 ---")
     
-    # IMPORTANTE: Si ya tenías un archivo 'datos_inv.txt' viejo, 
-    # es recomendable borrarlo para que las pruebas no mezclen cálculos viejos con nuevos.
+    # Limpieza inicial para propósitos de prueba
     if os.path.exists(ARCHIVO_DATOS):
         os.remove(ARCHIVO_DATOS)
 
     # Registrar productos de prueba
-    p_pro(1, "Laptop", 800.0, 3, "Tecnología") # Debería calcular 12% de IVA ($96)
-    p_pro(1, "Cuaderno", 2.50, 50, "Útiles")     # Debería calcular 15% de IVA ($0.375)
+    p_pro(1, "Laptop", 800.0, 3, "Tecnología")
+    p_pro(1, "Cuaderno", 2.50, 50, "Útiles")
     
     # Listar productos
     p_pro(2, "", 0, 0, "")

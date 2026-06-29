@@ -1,0 +1,16 @@
+[
+    {
+        "producto": "Laptop",
+        "precio_base": 800.0,
+        "stock": 3,
+        "categoria": "Tecnología",
+        "precio_final": 806.4
+    },
+    {
+        "producto": "Cuaderno",
+        "precio_base": 2.5,
+        "stock": 50,
+        "categoria": "Útiles",
+        "precio_final": 2.88
+    }
+]
