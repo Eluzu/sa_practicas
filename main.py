@@ -4,11 +4,11 @@ import json
 # Archivo de texto para persistencia de datos
 A = "datos_inv.json"
 
-def p_pro(op, x, p, c, t):
+def p_pro(op, c_b, x, p, c, t):
     # Función gigante que hace absolutamente todo: valida, calcula, escribe y formatea
     if op == 1:
         # VALIDACIÓN Y REGISTRO DE PRODUCTO
-        if x == "" or p <= 0 or c < 0:
+        if c_b == "" or x == "" or p <= 0 or c < 0:
             print("Error: Datos inválidos.")
             return False
         
@@ -27,6 +27,7 @@ def p_pro(op, x, p, c, t):
             p_final = total_con_iva
             
         producto = {
+            "codigo_barras":c_b,
             "nombre": x, 
             "precio": p,
             "stock": c,
@@ -57,11 +58,11 @@ def p_pro(op, x, p, c, t):
             datos = json.load(f)
                 
         print("--------------------------------------------------")
-        print("PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
+        print("COD | PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
         print("--------------------------------------------------")
                 
         for d in datos:
-            print(f"{d['nombre']} | ${d['precio']} | {d['stock']} unidades | {d['categoria']} | ${d['precio_final']}")
+            print(f"{d['codigo_barras']} | {d['nombre']} | ${d['precio']} | {d['stock']} unidades | {d['categoria']} | ${d['precio_final']}")
                     
             if d['stock'] < 5:
                 print("⚠ ALERTA: Stock bajo (menos de 5 unidades).")
@@ -92,11 +93,11 @@ def p_pro(op, x, p, c, t):
 if __name__ == "__main__":
     print("--- SISTEMA DE INVENTARIO VIEJO V1.0 ---")
     # Registrar un par de productos de prueba
-    p_pro(1, "Laptop", 800.0, 3, "Tecnología")
-    p_pro(1, "Cuaderno", 2.50, 50, "Útiles")
+    p_pro(1, "123456789", "Laptop", 800.0, 3, "Tecnología")
+    p_pro(1, "987654321", "Cuaderno", 2.50, 50, "Útiles")
     
     # Listar productos
-    p_pro(2, "", 0, 0, "")
+    p_pro(2, "", "", 0, 0, "")
     
     # Ver reporte de IVA
-    p_pro(3, "", 0, 0, "")
+    p_pro(3, "", "", 0, 0, "")
