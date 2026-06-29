@@ -60,5 +60,21 @@
         "stock": 50,
         "categoria": "\u00datiles",
         "precio_final": 2.88
+    },
+    {
+        "codigo_barras": "770123",
+        "nombre": "Laptop",
+        "precio": 800.0,
+        "stock": 2,
+        "categoria": "Tecnolog\u00eda",
+        "precio_final": 806.4
+    },
+    {
+        "codigo_barras": "770456",
+        "nombre": "Cuaderno",
+        "precio": 2.5,
+        "stock": 50,
+        "categoria": "\u00datiles",
+        "precio_final": 2.88
     }
 ]
