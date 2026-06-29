@@ -4,6 +4,7 @@ import os
 A = "datos_inv.txt"
 
 def p_pro(op, x, p, c, t):
+
     # Función gigante que hace absolutamente todo: valida, calcula, escribe y formatea
     if op == 1:
         # VALIDACIÓN Y REGISTRO DE PRODUCTO
@@ -47,6 +48,9 @@ def p_pro(op, x, p, c, t):
             x1 = datos1[0]
             p1 = float(datos1[1])
             c1 = int(datos1[2])
+
+            if c1 < 5:
+                print("Stock menor a 5")
             t1 = datos1[3]
             pf1 = float(datos1[4])
             print(f"{x1} | ${p1} | {c1} unidades | {t1} | ${pf1}")
@@ -72,7 +76,7 @@ def p_pro(op, x, p, c, t):
 if __name__ == "__main__":
     print("--- SISTEMA DE INVENTARIO VIEJO V1.0 ---")
     # Registrar un par de productos de prueba
-    p_pro(1, "Laptop", 800.0, 5, "Tecnología")
+    p_pro(1, "Laptop", 800.0, 3, "Tecnología")
     p_pro(1, "Cuaderno", 2.50, 50, "Útiles")
     
     # Listar productos
