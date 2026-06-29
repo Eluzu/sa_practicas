@@ -1,7 +1,7 @@
 import os
 import json
 
-# Cambiamos el archivo de persistencia a formato JSON
+# Archivo de persistencia JSON
 ARCHIVO_DATOS = "datos_inv.json"
 
 def calcular_iva(precio, categoria):
@@ -14,12 +14,12 @@ def calcular_iva(precio, categoria):
 def leer_datos_json():
     """Función utilitaria para leer de forma segura el archivo JSON."""
     if not os.path.exists(ARCHIVO_DATOS):
-        return []  # Si no existe, retornamos una lista vacía
+        return []
     try:
         with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
             return json.load(f)
     except json.JSONDecodeError:
-        return []  # Si el archivo está corrupto o vacío, retornamos lista vacía
+        return []
 
 
 def guardar_datos_json(datos):
@@ -28,12 +28,13 @@ def guardar_datos_json(datos):
         json.dump(datos, f, indent=4, ensure_ascii=False)
 
 
-def p_pro(op, x, p, c, t):
-    # Función que maneja las operaciones del inventario
+def p_pro(op, cod, x, p, c, t):
+    # Agregamos 'cod' como segundo parámetro para el código de barras
     if op == 1:
         # VALIDACIÓN Y REGISTRO DE PRODUCTO
-        if x == "" or p <= 0 or c < 0:
-            print("Error: Datos inválidos.")
+        # Añadimos la validación obligatoria de 'cod'
+        if cod == "" or x == "" or p <= 0 or c < 0:
+            print("Error: Datos inválidos. El código de barras y el nombre son obligatorios.")
             return False
         
         # Aplicamos la regla de IVA
@@ -46,8 +47,9 @@ def p_pro(op, x, p, c, t):
         else:
             p_final = total_con_iva
             
-        # Creamos una estructura de diccionario limpia para el JSON
+        # Agregamos "codigo_barras" al inicio de nuestro diccionario estructurado
         nuevo_producto = {
+            "codigo_barras": cod,
             "producto": x,
             "precio_base": p,
             "stock": c,
@@ -55,12 +57,11 @@ def p_pro(op, x, p, c, t):
             "precio_final": round(p_final, 2)
         }
         
-        # Leemos el estado actual, añadimos el nuevo item y guardamos
         inventario = leer_datos_json()
         inventario.append(nuevo_producto)
         guardar_datos_json(inventario)
         
-        print("Producto guardado con éxito en formato JSON.")
+        print(f"Producto '{x}' [Cod: {cod}] guardado con éxito.")
         
     elif op == 2:
         # LECTURA Y DESPLIEGUE EN TABLA
@@ -69,16 +70,16 @@ def p_pro(op, x, p, c, t):
             print("No hay datos registrados.")
             return
         
-        print("--------------------------------------------------")
-        print("PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
-        print("--------------------------------------------------")
+        print("----------------------------------------------------------------------")
+        print("COD   | PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
+        print("----------------------------------------------------------------------")
         for item in inventario:
-            # Ahora accedemos por llaves legibles en lugar de índices numéricos (datos[0])
             if item["stock"] < 5:
                 print(f"⚠️ Alerta: Stock de '{item['producto']}' menor a 5 unidades")
                 
-            print(f"{item['producto']} | ${item['precio_base']} | {item['stock']} unidades | {item['categoria']} | ${item['precio_final']}")
-        print("--------------------------------------------------")
+            # Desplegamos el nuevo campo en la tabla visual
+            print(f"{item['codigo_barras']} | {item['producto']} | ${item['precio_base']} | {item['stock']} unidades | {item['categoria']} | ${item['precio_final']}")
+        print("----------------------------------------------------------------------")
 
     elif op == 3:
         # REPORTES
@@ -89,7 +90,6 @@ def p_pro(op, x, p, c, t):
         
         sumatoria = 0
         for item in inventario:
-            # Usamos la función de IVA mapeando los datos del JSON
             iva_correcto = calcular_iva(item["precio_base"], item["categoria"])
             sumatoria += iva_correcto
             
@@ -97,18 +97,20 @@ def p_pro(op, x, p, c, t):
 
 # Simulación de ejecución del programa
 if __name__ == "__main__":
-    print("--- SISTEMA DE INVENTARIO JSON V1.2 ---")
+    print("--- SISTEMA DE INVENTARIO CON CÓDIGO DE BARRAS V1.3 ---")
     
-    # Limpieza inicial para propósitos de prueba
     if os.path.exists(ARCHIVO_DATOS):
         os.remove(ARCHIVO_DATOS)
 
-    # Registrar productos de prueba
-    p_pro(1, "Laptop", 800.0, 3, "Tecnología")
-    p_pro(1, "Cuaderno", 2.50, 50, "Útiles")
+    # Registrar productos incluyendo el nuevo parámetro 'cod' al inicio de los datos
+    p_pro(1, "789101", "Laptop", 800.0, 3, "Tecnología")
+    p_pro(1, "789102", "Cuaderno", 2.50, 50, "Útiles")
     
-    # Listar productos
-    p_pro(2, "", 0, 0, "")
+    # Intento de registrar un producto inválido (sin código de barras) -> Debería fallar
+    p_pro(1, "", "Producto Fallido", 10.0, 5, "Varios")
+    
+    # Listar productos (pasamos "" en el campo de código ya que la op 2 no lo usa para registrar)
+    p_pro(2, "", "", 0, 0, "")
     
     # Ver reporte de IVA
-    p_pro(3, "", 0, 0, "")
+    p_pro(3, "", "", 0, 0, "")

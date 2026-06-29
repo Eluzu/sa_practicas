@@ -1,5 +1,6 @@
 [
     {
+        "codigo_barras": "789101",
         "producto": "Laptop",
         "precio_base": 800.0,
         "stock": 3,
@@ -7,6 +8,7 @@
         "precio_final": 806.4
     },
     {
+        "codigo_barras": "789102",
         "producto": "Cuaderno",
         "precio_base": 2.5,
         "stock": 50,
