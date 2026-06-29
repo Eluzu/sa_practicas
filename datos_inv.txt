@@ -1,2 +1,4 @@
 Laptop,800.0,2,Tecnología,828.0
 Cuaderno,2.5,50,Útiles,2.875
+Laptop,800.0,2,Tecnología,806.4
+Cuaderno,2.5,50,Útiles,2.875
