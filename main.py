@@ -11,8 +11,11 @@ def p_pro(op, x, p, c, t):
             print("Error: Datos inválidos.")
             return False
         
-        # Hardcoding: IVA del 15% quemado directamente en el bucle/lógica
-        iva = p * 0.15
+        # # Cálculo del IVA según la categoría del producto
+        if t == "Tecnología":
+            iva = p * 0.12
+        else:
+            iva = p * 0.15
         total_con_iva = p + iva
         
         # Lógica de descuento repetida e idéntica (Código duplicado)
@@ -64,8 +67,13 @@ def p_pro(op, x, p, c, t):
         for l in lineas:
             datos2 = l.strip().split(",")
             precio_base = float(datos2[1])
-            # Repetición del cálculo del IVA del 15% (Hardcoded)
-            iva_repetido = precio_base * 0.15
+            categoria = datos2[3]
+
+            if categoria == "Tecnología":
+                iva_repetido = precio_base * 0.12
+            else:
+                iva_repetido = precio_base * 0.15
+
             sumatoria += iva_repetido
         print(f"Total de IVA acumulado en inventario: ${sumatoria}")
 
