@@ -1,7 +1,8 @@
 import os
+import json
 
 # Archivo de texto para persistencia de datos
-A = "datos_inv.txt"
+A = "datos_inv.json"
 
 def p_pro(op, x, p, c, t):
     # Función gigante que hace absolutamente todo: valida, calcula, escribe y formatea
@@ -25,49 +26,59 @@ def p_pro(op, x, p, c, t):
         else:
             p_final = total_con_iva
             
-        linea = f"{x},{p},{c},{t},{p_final}\n"
-        
-        # Escritura directa en archivo plano
-        with open(A, "a") as f:
-            f.write(linea)
+        producto = {
+            "nombre": x, 
+            "precio": p,
+            "stock": c,
+            "categoria": t,
+            "precio_final": p_final
+        }
+        if os.path.exists(A):
+            with open(A, "r") as f: 
+                try:
+                    datos = json.load(f)
+                except json.JSONDecodeError:
+                    datos = []
+        else:
+            datos = []
+            
+        datos.append(producto)
+        with open(A, "w") as f:
+            json.dump(datos, f, indent=4)
+            
         print("Producto guardado con éxito.")
         
     elif op == 2:
-        # LECTURA Y DESPLIEGUE EN TABLA
         if not os.path.exists(A):
             print("No hay datos registrados.")
             return
-        
-        with open(A, "r") as f:
-            lineas = f.readlines()
             
+        with open(A, "r", encoding="utf-8") as f:
+            datos = json.load(f)
+                
         print("--------------------------------------------------")
         print("PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
         print("--------------------------------------------------")
-        for l in lineas:
-            datos1 = l.strip().split(",")
-            # Nombres crípticos de variables (datos1, x1, etc.)
-            x1 = datos1[0]
-            p1 = float(datos1[1])
-            c1 = int(datos1[2])
-            t1 = datos1[3]
-            pf1 = float(datos1[4])
-            print(f"{x1} | ${p1} | {c1} unidades | {t1} | ${pf1}")
-            if c1 < 5:
+                
+        for d in datos:
+            print(f"{d['nombre']} | ${d['precio']} | {d['stock']} unidades | {d['categoria']} | ${d['precio_final']}")
+                    
+            if d['stock'] < 5:
                 print("⚠ ALERTA: Stock bajo (menos de 5 unidades).")
 
     elif op == 3:
-        # SIMULACIÓN DE REPORTES (Código duplicado para recalcular el IVA otra vez)
         if not os.path.exists(A):
+            print("No hay datos registrados.")
             return
-        with open(A, "r") as f:
-            lineas = f.readlines()
-        
+
+        with open(A, "r", encoding="utf-8") as f:
+            datos = json.load(f)
+
         sumatoria = 0
-        for l in lineas:
-            datos2 = l.strip().split(",")
-            precio_base = float(datos2[1])
-            categoria = datos2[3]
+
+        for d in datos:
+            precio_base = d["precio"]
+            categoria = d["categoria"]
 
             if categoria == "Tecnología":
                 iva_repetido = precio_base * 0.12
