@@ -1,121 +1,13 @@
 import os
-import json
-from dataclasses import dataclass
-
-ARCHIVO_INVENTARIO = "inventario.json"
-IVA_GENERAL = 0.15
-IVA_TECNOLOGIA = 0.12
-CATEGORIA_DESCUENTO = "Tecnología"
-DESCUENTO_TECNOLOGIA = 0.10
-STOCK_MINIMO_ALERTA = 5
-
-@dataclass
-class Producto:
-    codigo_barras: str
-    nombre: str
-    precio: float
-    stock: int
-    categoria: str
-
-def validar_producto(producto: Producto) -> bool:
-    return (
-        producto.codigo_barras != ""
-        and producto.nombre != ""
-        and producto.precio > 0
-        and producto.stock >= 0
-    )
-
-def calcular_iva(precio: float, categoria: str) -> float:
-    if categoria == "Tecnología":
-        return precio * IVA_TECNOLOGIA
-    return precio * IVA_GENERAL
-
-
-def calcular_precio_final(producto: Producto) -> float:
-    precio_con_iva = producto.precio + calcular_iva(producto.precio, producto.categoria)
-
-    if producto.categoria == CATEGORIA_DESCUENTO:
-        return precio_con_iva * (1 - DESCUENTO_TECNOLOGIA)
-
-    return precio_con_iva
-
-def guardar_producto(producto: Producto):
-    productos = leer_productos()
-    
-    producto_dict = {
-        "codigo_barras": producto.codigo_barras,
-        "nombre": producto.nombre,
-        "precio": producto.precio,
-        "stock": producto.stock,
-        "categoria": producto.categoria,
-    }
-    productos.append(producto_dict)
-    
-    with open(ARCHIVO_INVENTARIO, "w") as archivo:
-        json.dump(productos, archivo, indent=4)
-
-def registrar_producto(producto: Producto):
-    if not validar_producto(producto):
-        print("Datos inválidos.")
-        return
-
-    guardar_producto(producto)
-    print(f"Producto '{producto.nombre}' registrado.")
-
-def leer_productos():
-    if not os.path.exists(ARCHIVO_INVENTARIO):
-        return []
-    
-    with open(ARCHIVO_INVENTARIO) as archivo:
-        try:
-            return json.load(archivo)
-        except json.JSONDecodeError:
-            return []
-
-def listar_productos():
-    productos = leer_productos()
-
-    if not productos:
-        print("No existen productos.")
-        return
-
-    print("-" * 80)
-    print(f"{'Código':<15} | {'Nombre':<15} | {'Precio':<10} | {'Stock':<5} | {'Categoría':<12} | {'Precio Final':<12}")
-    print("-" * 80)
-
-    for producto in productos:
-        # Recreamos una instancia de Producto para usar los métodos de cálculo
-        prod_obj = Producto(**producto)
-        precio_final = calcular_precio_final(prod_obj)
-        
-        print(
-            f"{producto['codigo_barras']:<15} | "
-            f"{producto['nombre']:<15} | "
-            f"${producto['precio']:<9.2f} | "
-            f"{producto['stock']:<5} | "
-            f"{producto['categoria']:<12} | "
-            f"${precio_final:<11.2f}"
-        )
-        if producto['stock'] < STOCK_MINIMO_ALERTA:
-            print(f"  -> ALERTA: ¡Stock bajo! ({producto['stock']} unidades restantes)")
-
-
-def reporte_iva():
-
-    productos = leer_productos()
-
-    total_iva = sum(
-        calcular_iva(producto["precio"], producto["categoria"])
-        for producto in productos
-    )
-
-    print(f"IVA acumulado: ${total_iva:.2f}")
-
+from models import Producto
+from repository import registrar_producto
+import ui
+import config
 
 def main():
     # Limpiamos el archivo de inventario para una ejecución limpia
-    if os.path.exists(ARCHIVO_INVENTARIO):
-        os.remove(ARCHIVO_INVENTARIO)
+    if os.path.exists(config.ARCHIVO_INVENTARIO):
+        os.remove(config.ARCHIVO_INVENTARIO)
         
     registrar_producto(
         Producto("7501055311490", "Laptop", 800, 4, "Tecnología")
@@ -124,10 +16,9 @@ def main():
         Producto("7502234567890", "Cuaderno", 2.5, 50, "Útiles")
     )
 
-    listar_productos()
+    ui.listar_productos()
 
-    reporte_iva()
-
+    ui.reporte_iva()
 
 if __name__ == "__main__":
     main()

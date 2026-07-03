@@ -51,3 +51,37 @@ Enumera qué 3 acciones principales tomarían para eliminar la deuda técnica de
 ## 4. Conclusiones del Equipo
 * **Porcentaje estimado de deuda técnica en el script original (0% al 100%):** [**70%**]
 * **Reflexión ágil:** Un software rígido con alta deuda técnica obliga a los desarrolladores a invertir más tiempo en entender y modificar código frágil que en entregar nuevas funcionalidades. En un marco ágil como Scrum, esto reduce drásticamente la velocidad del equipo, ya que el esfuerzo para completar una historia de usuario aumenta inesperadamente, impidiendo cumplir con los objetivos del sprint y entregar valor de forma continua.
+---
+## 5. Alternativa para separar en diferentes archivos el programa implementado (respetado siempre los principio de código limpio)
+
+Siguiendo esta propuesta, se ha reestructurado el proyecto aplicando el **Principio de Responsabilidad Única (SRP)**. El monolítico `main.py` fue dividido en módulos cohesivos, donde cada uno tiene una única y bien definida razón para cambiar.
+
+Esta separación no solo elimina la deuda técnica, sino que también crea un sistema más mantenible, escalable y fácil de probar. A continuación, se detalla la arquitectura y la responsabilidad de cada archivo:
+
+### `main.py` - El Orquestador
+*   **Responsabilidad:** Ser el punto de entrada y coordinar el flujo principal de la aplicación.
+*   **Guía:** Este archivo no contiene lógica de negocio, persistencia o presentación. Su única tarea es iniciar la aplicación y llamar a las funciones de alto nivel de los otros módulos en el orden correcto. Para añadir un nuevo paso en el flujo principal, este es el lugar para hacerlo.
+
+### `config.py` - El Centro de Configuración
+*   **Responsabilidad:** Centralizar todas las constantes y parámetros de configuración.
+*   **Guía:** Si necesitas cambiar una tasa de IVA, el nombre del archivo de inventario, el umbral de stock o cualquier otro "número mágico", este es el único lugar que debes modificar. Esto evita tener que buscar valores hardcodeados por todo el código.
+
+### `models.py` - Los Planos de Datos
+*   **Responsabilidad:** Definir las estructuras de datos de la aplicación, como la clase `Producto`.
+*   **Guía:** Si se requiere añadir o modificar un campo en los productos (ej. agregar `descripcion`), se debe empezar por actualizar la `dataclass` en este archivo.
+
+### `services.py` - El Cerebro del Negocio
+*   **Responsabilidad:** Contener toda la lógica de negocio pura.
+*   **Guía:** Las funciones aquí (`calcular_iva`, `calcular_precio_final`, etc.) realizan los cálculos y validaciones. No dependen de cómo se guardan los datos ni de cómo se muestran. Si una regla de negocio cambia, este es el módulo a modificar. Gracias a su desacoplamiento, es el candidato ideal para las pruebas unitarias.
+
+### `repository.py` - El Guardián de los Datos
+*   **Responsabilidad:** Encapsular toda la lógica de persistencia (lectura y escritura de datos).
+*   **Guía:** Este módulo actúa como una capa de abstracción sobre el almacenamiento. Actualmente usa un archivo JSON, pero si en el futuro se decide migrar a una base de datos SQL o a un servicio en la nube, **este es el único archivo que necesitaría cambiar**. El resto de la aplicación seguiría funcionando sin modificaciones.
+
+### `ui.py` - La Cara Visible
+*   **Responsabilidad:** Manejar toda la interacción con el usuario (la capa de presentación).
+*   **Guía:** Todas las funciones que imprimen en consola (`print`) están aquí. Si se desea cambiar el formato de la tabla de productos, añadir colores o incluso crear una interfaz gráfica en el futuro, este es el módulo que se debe evolucionar.
+
+### Conclusión de la Arquitectura
+
+Esta estructura modular permite que los desarrolladores trabajen en diferentes aspectos de la aplicación de forma independiente. Un cambio en la base de datos (`repository.py`) no afectará a quien esté ajustando la interfaz de usuario (`ui.py`), y viceversa. Esto no solo reduce el riesgo de introducir errores, sino que acelera drásticamente el desarrollo y la adaptación a nuevos requerimientos, alineándose perfectamente con los principios de un desarrollo ágil.
