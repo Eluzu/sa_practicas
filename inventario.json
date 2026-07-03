@@ -1,0 +1,16 @@
+[
+    {
+        "codigo_barras": "7501055311490",
+        "nombre": "Laptop",
+        "precio": 800,
+        "stock": 4,
+        "categoria": "Tecnolog\u00eda"
+    },
+    {
+        "codigo_barras": "7502234567890",
+        "nombre": "Cuaderno",
+        "precio": 2.5,
+        "stock": 50,
+        "categoria": "\u00datiles"
+    }
+]
