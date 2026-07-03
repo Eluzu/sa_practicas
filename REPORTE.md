@@ -14,7 +14,7 @@
 ---
 ## 1. Análisis de Calidad del Código Base
 
-El código inicial presentaba varios "dolores" de diseño que obstaculizan su mantenimiento y evolución. A continuación, se detallan los principales problemas identificados.
+El código inicial presentaba varios "olores" de diseño que obstaculizan su mantenimiento y evolución. A continuación, se detallan los principales problemas identificados.
 
 1. **Alta Resistencia al Cambio (Rigidez):**
    El sistema demuestra ser rígido, ya que cambios sencillos en la lógica de negocio provocan una reacción en cadena a través de múltiples componentes. Un ejemplo claro fue el requerimiento de ajustar el IVA para la categoría "Tecnología". Esta modificación no solo implicó alterar la función de cálculo (`calcular_iva`), sino que también forzó un cambio en su firma para aceptar la categoría del producto. Esto, a su vez, repercutió en `calcular_precio_final` y `reporte_iva`, que tuvieron que ser adaptados para proporcionar este nuevo parámetro. El problema subyacente era una constante global `IVA` que asumía una regla de negocio única para todos los casos, haciendo el diseño inflexible ante excepciones.
@@ -62,8 +62,50 @@ Para mitigar la deuda técnica identificada, proponemos las siguientes tres acci
     Es fundamental garantizar la consistencia en la representación de los datos. El `dataclass Producto` debe ser el modelo canónico en toda la aplicación. Las funciones de persistencia, como `leer_productos`, deben ser refactorizadas para que devuelvan una lista de objetos `Producto` (`List[Producto]`) en lugar de una lista de diccionarios. Esto no solo mejora la legibilidad y el mantenimiento, sino que también habilita el chequeo de tipos estático y un mejor soporte del IDE.
 
 ---
-## 4. Conclusiones Finales
+## 4. Implementación de la Refactorización: Separación de Responsabilidades
+
+Siguiendo el plan de refactorización, se procedió a reestructurar la aplicación monolítica (`main.py`) en un proyecto modular, aplicando el **Principio de Responsabilidad Única**. El objetivo principal fue aislar las distintas áreas de la aplicación (datos, lógica de negocio, presentación) para reducir el acoplamiento y aumentar la cohesión, facilitando así su mantenimiento y futura expansión.
+
+La nueva estructura de archivos propuesta es la siguiente:
+
+```
+sa_practicas/
+├── config.py
+├── domain/
+│   └── product.py
+├── repository/
+│   └── product_repository.py
+├── services/
+│   └── inventory_service.py
+├── ui/
+│   └── console_ui.py
+└── main.py
+```
+
+A continuación, se detalla la responsabilidad de cada componente:
+
+*   **`config.py` (Módulo de Configuración):**
+    Este archivo centraliza todas las constantes y parámetros que pueden cambiar con el tiempo, como las tasas de IVA, las reglas de descuento o la ubicación del archivo de datos. Al externalizar la configuración, se logra que las modificaciones en las reglas de negocio no requieran alterar el código fuente de la lógica principal.
+
+*   **`domain/product.py` (Capa de Dominio):**
+    Contiene la definición del `dataclass Producto`. Este es el corazón del modelo de datos de la aplicación. Aislarlo en su propio módulo asegura que exista una única fuente de verdad sobre la estructura de un producto, eliminando la ambigüedad y la inconsistencia entre capas.
+
+*   **`repository/product_repository.py` (Capa de Repositorio):**
+    Implementa el patrón Repositorio. Su única responsabilidad es la persistencia de los objetos `Producto`. Es el único módulo que sabe *cómo* y *dónde* se guardan los datos (en este caso, en un archivo JSON). Abstrae los detalles de lectura y escritura, de modo que el resto de la aplicación solo necesita pedir o enviar listas de objetos `Producto`, sin preocuparse por el formato de almacenamiento.
+
+*   **`services/inventory_service.py` (Capa de Servicios):**
+    Aquí reside la lógica de negocio pura. Orquesta las operaciones (ej. registrar un producto), realiza validaciones y ejecuta cálculos (ej. precio final). Depende del repositorio para obtener y guardar datos, pero no sabe nada sobre la persistencia. Tampoco sabe cómo se muestran los datos al usuario. Esta capa es reutilizable y el núcleo funcional del sistema.
+
+*   **`ui/console_ui.py` (Capa de Interfaz de Usuario):**
+    Es responsable de toda la interacción con el usuario. Llama a la capa de servicios para obtener los datos que necesita y luego se encarga de formatearlos y presentarlos en la consola. Si en el futuro se deseara una interfaz web, solo habría que crear un nuevo módulo de UI que consuma los mismos servicios, sin tocar la lógica de negocio.
+
+*   **`main.py` (Punto de Entrada):**
+    Tras la refactorización, este archivo tiene un rol muy simple y claro: actuar como el "compositor" de la aplicación. Su única tarea es instanciar y conectar los diferentes componentes (Repositorio, Servicio, UI) en un proceso conocido como Inyección de Dependencias, y luego iniciar el flujo principal de la aplicación.
+
+Esta separación de responsabilidades ataca directamente los problemas de **Rigidez**, **Inmovilidad** y **Opacidad** identificados en el análisis inicial, resultando en un sistema más robusto, flexible y fácil de mantener.
+
+---
+## 5. Conclusiones Finales
 
 *   **Estimación de Deuda Técnica en el Código Original:** Se estima que el proyecto partió con un **70%** aproximadamente de deuda técnica, considerando el alto costo de modificación frente al bajo costo de desarrollo inicial.
 *   **Impacto en la Metodología Ágil:** La alta deuda técnica es un lastre para la agilidad. Un código frágil y rígido como el analizado consume un tiempo desproporcionado en mantenimiento y adaptación, en lugar de dedicarlo a la creación de valor. En un contexto ágil como Scrum, esto se traduce en una velocidad de equipo (velocity) reducida e impredecible. Las estimaciones de las historias de usuario se vuelven poco fiables, lo que dificulta la planificación de los sprints y compromete la capacidad del equipo para entregar incrementos de software funcionales de manera sostenida.
-
