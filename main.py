@@ -1,82 +1,136 @@
+import json
 import os
+from dataclasses import dataclass
 
-# Archivo de texto para persistencia de datos
-A = "datos_inv.txt"
+ARCHIVO_INVENTARIO = "datos_inv.json"
+IVA_GENERAL = 0.15
+IVA_TECNOLOGIA = 0.12
+CATEGORIA_TECNOLOGIA = "Tecnología"
+DESCUENTO_TECNOLOGIA = 0.10
 
-def p_pro(op, x, p, c, t):
-    # Función gigante que hace absolutamente todo: valida, calcula, escribe y formatea
-    if op == 1:
-        # VALIDACIÓN Y REGISTRO DE PRODUCTO
-        if x == "" or p <= 0 or c < 0:
-            print("Error: Datos inválidos.")
-            return False
-        
-        # Hardcoding: IVA del 15% quemado directamente en el bucle/lógica
-        iva = p * 0.15
-        total_con_iva = p + iva
-        
-        # Lógica de descuento repetida e idéntica (Código duplicado)
-        if t == "Tecnología":
-            # 10% de descuento para tecnología
-            p_final = total_con_iva - (total_con_iva * 0.10)
-        else:
-            p_final = total_con_iva
-            
-        linea = f"{x},{p},{c},{t},{p_final}\n"
-        
-        # Escritura directa en archivo plano
-        with open(A, "a") as f:
-            f.write(linea)
-        print("Producto guardado con éxito.")
-        
-    elif op == 2:
-        # LECTURA Y DESPLIEGUE EN TABLA
-        if not os.path.exists(A):
-            print("No hay datos registrados.")
-            return
-        
-        with open(A, "r") as f:
-            lineas = f.readlines()
-            
-        print("--------------------------------------------------")
-        print("PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
-        print("--------------------------------------------------")
-        for l in lineas:
-            datos1 = l.strip().split(",")
-            # Nombres crípticos de variables (datos1, x1, etc.)
-            x1 = datos1[0]
-            p1 = float(datos1[1])
-            c1 = int(datos1[2])
-            t1 = datos1[3]
-            pf1 = float(datos1[4])
-            print(f"{x1} | ${p1} | {c1} unidades | {t1} | ${pf1}")
-        print("--------------------------------------------------")
+@dataclass
+class Producto:
+    codigo_barras: str  # Requerimiento: Campo obligatorio al inicio
+    nombre: str
+    precio: float
+    stock: int
+    categoria: str
 
-    elif op == 3:
-        # SIMULACIÓN DE REPORTES (Código duplicado para recalcular el IVA otra vez)
-        if not os.path.exists(A):
-            return
-        with open(A, "r") as f:
-            lineas = f.readlines()
-        
-        sumatoria = 0
-        for l in lineas:
-            datos2 = l.strip().split(",")
-            precio_base = float(datos2[1])
-            # Repetición del cálculo del IVA del 15% (Hardcoded)
-            iva_repetido = precio_base * 0.15
-            sumatoria += iva_repetido
-        print(f"Total de IVA acumulado en inventario: ${sumatoria}")
+def validar_producto(producto: Producto) -> bool:
+    return (
+        producto.codigo_barras != ""  # Validación del nuevo campo obligatorio
+        and producto.nombre != ""
+        and producto.precio > 0
+        and producto.stock >= 0
+    )
 
-# Simulación de ejecución del programa
+def obtener_tasa_iva(categoria: str) -> float:
+    if categoria == CATEGORIA_TECNOLOGIA:
+        return IVA_TECNOLOGIA
+    return IVA_GENERAL
+
+def calcular_iva(precio: float, categoria: str) -> float:
+    tasa = obtener_tasa_iva(categoria)
+    return precio * tasa
+
+def calcular_precio_final(producto: Producto) -> float:
+    iva_producto = calcular_iva(producto.precio, producto.categoria)
+    precio_con_iva = producto.precio + iva_producto
+
+    if producto.categoria == CATEGORIA_TECNOLOGIA:
+        return precio_con_iva * (1 - DESCUENTO_TECNOLOGIA)
+
+    return precio_con_iva
+
+def leer_productos() -> list:
+    if not os.path.exists(ARCHIVO_INVENTARIO):
+        return []
+
+    try:
+        with open(ARCHIVO_INVENTARIO, "r", encoding="utf-8") as archivo:
+            return json.load(archivo)
+    except json.JSONDecodeError:
+        return []
+
+def guardar_producto(producto: Producto):
+    precio_final = calcular_precio_final(producto)
+    productos = leer_productos()
+
+    # Estructuramos el diccionario poniendo el código de barras al inicio
+    nuevo_producto = {
+        "codigo_barras": producto.codigo_barras,
+        "nombre": producto.nombre,
+        "precio": producto.precio,
+        "stock": producto.stock,
+        "categoria": producto.categoria,
+        "precio_final": round(precio_final, 2)
+    }
+
+    productos.append(nuevo_producto)
+
+    with open(ARCHIVO_INVENTARIO, "w", encoding="utf-8") as archivo:
+        json.dump(productos, archivo, indent=4, ensure_ascii=False)
+
+def registrar_producto(producto: Producto):
+    if not validar_producto(producto):
+        print(f"Error: Datos inválidos para el producto con código '{producto.codigo_barras}'.")
+        return
+
+    guardar_producto(producto)
+    print(f"Producto [{producto.codigo_barras}] '{producto.nombre}' registrado con éxito.")
+
+def listar_productos():
+    productos = leer_productos()
+
+    if not productos:
+        print("No existen productos en el inventario.")
+        return
+
+    print("-" * 95)
+    print(f"{'Código Barras':<15} | {'Nombre':<20} | {'Precio':<8} | {'Stock':<5} | {'Categoría':<12} | {'Precio Final':<12}")
+    print("-" * 95)
+
+    for prod in productos:
+        alerta_stock = " -> [¡ALERTA! STOCK CRÍTICO]" if prod['stock'] < 5 else ""
+        
+        print(
+            f"{prod['codigo_barras']:<15} | "
+            f"{prod['nombre']:<20} | "
+            f"${prod['precio']:<7.2f} | "
+            f"{prod['stock']:<5} | "
+            f"{prod['categoria']:<12} | "
+            f"${prod['precio_final']:<11.2f}"
+            f"{alerta_stock}"
+        )
+    print("-" * 95)
+
+def reporte_iva():
+    productos = leer_productos()
+
+    total_iva = sum(
+        calcular_iva(prod["precio"], prod["categoria"])
+        for prod in productos
+    )
+
+    print(f"IVA acumulado total: ${total_iva:.2f}")
+
+
+def main():
+    # Limpieza del archivo JSON para pruebas limpias
+    if os.path.exists(ARCHIVO_INVENTARIO):
+        os.remove(ARCHIVO_INVENTARIO)
+
+    # El código de barras ahora es el primer parámetro obligatorio
+    registrar_producto(Producto("789101112", "Laptop Pro", 1200.0, 3, "Tecnología"))
+    registrar_producto(Producto("978012345", "Enciclopedia", 45.0, 15, "Libros"))
+    registrar_producto(Producto("789101115", "Mouse Óptico", 25.0, 10, "Tecnología"))
+
+    print("\n--- INVENTARIO ACTUAL DESDE ARCHIVO JSON ---")
+    listar_productos()
+
+    print("--- INFORME FINANCIERO DE IMPUESTOS ---")
+    reporte_iva()
+
+
 if __name__ == "__main__":
-    print("--- SISTEMA DE INVENTARIO VIEJO V1.0 ---")
-    # Registrar un par de productos de prueba
-    p_pro(1, "Laptop", 800.0, 5, "Tecnología")
-    p_pro(1, "Cuaderno", 2.50, 50, "Útiles")
-    
-    # Listar productos
-    p_pro(2, "", 0, 0, "")
-    
-    # Ver reporte de IVA
-    p_pro(3, "", 0, 0, "")
+    main()

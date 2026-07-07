@@ -1,0 +1,10 @@
+[
+    {
+        "codigo_barras": "789101112",
+        "nombre": "Laptop Pro",
+        "precio": 1200.0,
+        "stock": 3,
+        "categoria": "Tecnología",
+        "precio_final": 1209.6
+    }
+]
