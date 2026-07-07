@@ -1,103 +1,145 @@
 import os
-import json
+import json 
+from dataclasses import dataclass
 
-# Archivo de texto para persistencia de datos
-A = "datos_inv.json"
+ARCHIVO_INVENTARIO = "datos_inv.json"
+IVA = 0.15
+IVA_TECNOLOGIA = 0.12
+CATEGORIA_DESCUENTO = "Tecnología"
+DESCUENTO_TECNOLOGIA = 0.10
 
-def p_pro(op, c_b, x, p, c, t):
-    # Función gigante que hace absolutamente todo: valida, calcula, escribe y formatea
-    if op == 1:
-        # VALIDACIÓN Y REGISTRO DE PRODUCTO
-        if c_b == "" or x == "" or p <= 0 or c < 0:
-            print("Error: Datos inválidos.")
-            return False
-        
-        # # Cálculo del IVA según la categoría del producto
-        if t == "Tecnología":
-            iva = p * 0.12
+@dataclass
+class Producto:
+    codigo_barras: str
+    nombre: str
+    precio: float
+    stock: int
+    categoria: str
+
+def validar_producto(producto: Producto) -> bool:
+    return (
+        producto.codigo_barras != ""
+        and producto.nombre != ""
+        and producto.precio > 0
+        and producto.stock >= 0
+    )
+
+def calcular_iva(producto: Producto) -> float:
+    if producto.categoria == "Tecnología":
+        return producto.precio * IVA_TECNOLOGIA
+    return producto.precio * IVA
+
+
+def calcular_precio_final(producto: Producto) -> float:
+
+    precio_con_iva = producto.precio + calcular_iva(producto)
+
+    if producto.categoria == CATEGORIA_DESCUENTO:
+        return precio_con_iva * (1 - DESCUENTO_TECNOLOGIA)
+
+    return precio_con_iva
+
+def guardar_producto(producto: Producto):
+
+    precio_final = calcular_precio_final(producto)
+    
+    nuevo_producto = {
+        "codigo_barras": producto.codigo_barras,
+        "nombre": producto.nombre,
+        "precio": producto.precio,
+        "stock": producto.stock,
+        "categoria": producto.categoria,
+        "precio_final": precio_final
+    }
+
+    productos = []
+
+    if os.path.exists(ARCHIVO_INVENTARIO):
+        with open(ARCHIVO_INVENTARIO, "r", encoding="utf-8") as archivo:
+            try:
+                productos = json.load(archivo)
+            except json.JSONDecodeError:
+                productos = []
+
+    productos.append(nuevo_producto)
+
+    with open(ARCHIVO_INVENTARIO, "w", encoding="utf-8") as archivo:
+        json.dump(productos, archivo, indent=4, ensure_ascii=False)
+
+
+def registrar_producto(producto: Producto):
+
+    if not validar_producto(producto):
+        print("Datos inválidos.")
+        return
+
+    guardar_producto(producto)
+    print("Producto registrado.")
+
+def leer_productos():
+
+    if not os.path.exists(ARCHIVO_INVENTARIO):
+        return []
+
+    productos = []
+    with open(ARCHIVO_INVENTARIO, "r", encoding="utf-8") as archivo:
+        try:
+            return json.load(archivo)
+        except json.JSONDecodeError:
+            return []
+
+def listar_productos():
+
+    productos = leer_productos()
+
+    if not productos:
+        print("No existen productos.")
+        return
+
+    print("-" * 60)
+
+    for producto in productos:
+        print(
+            f"{producto['codigo_barras']} | "
+            f"{producto['nombre']} | "
+            f"${producto['precio']} | "
+            f"{producto['stock']} | "
+            f"{producto['categoria']} | "
+            f"${producto['precio_final']:.2f}"
+        )
+            
+        if producto["stock"] < 5:
+            print("⚠️ ALERTA: Stock menor a 5 unidades")
+
+
+def reporte_iva():
+
+    productos = leer_productos()
+
+    total_iva = 0
+    for producto in productos:
+        if producto["categoria"] == "Tecnología":
+            total_iva += producto["precio"] * IVA_TECNOLOGIA
         else:
-            iva = p * 0.15
-        total_con_iva = p + iva
-        
-        # Lógica de descuento repetida e idéntica (Código duplicado)
-        if t == "Tecnología":
-            # 10% de descuento para tecnología
-            p_final = total_con_iva - (total_con_iva * 0.10)
-        else:
-            p_final = total_con_iva
-            
-        producto = {
-            "codigo_barras":c_b,
-            "nombre": x, 
-            "precio": p,
-            "stock": c,
-            "categoria": t,
-            "precio_final": p_final
-        }
-        if os.path.exists(A):
-            with open(A, "r") as f: 
-                try:
-                    datos = json.load(f)
-                except json.JSONDecodeError:
-                    datos = []
-        else:
-            datos = []
-            
-        datos.append(producto)
-        with open(A, "w") as f:
-            json.dump(datos, f, indent=4)
-            
-        print("Producto guardado con éxito.")
-        
-    elif op == 2:
-        if not os.path.exists(A):
-            print("No hay datos registrados.")
-            return
-            
-        with open(A, "r", encoding="utf-8") as f:
-            datos = json.load(f)
-                
-        print("--------------------------------------------------")
-        print("COD | PROD | PRECIO | STOCK | CAT | PRECIO FINAL")
-        print("--------------------------------------------------")
-                
-        for d in datos:
-            print(f"{d['codigo_barras']} | {d['nombre']} | ${d['precio']} | {d['stock']} unidades | {d['categoria']} | ${d['precio_final']}")
-                    
-            if d['stock'] < 5:
-                print("⚠ ALERTA: Stock bajo (menos de 5 unidades).")
+            total_iva += producto["precio"] * IVA
 
-    elif op == 3:
-        if not os.path.exists(A):
-            print("No hay datos registrados.")
-            return
+    print(f"IVA acumulado: ${total_iva:.2f}")
 
-        with open(A, "r", encoding="utf-8") as f:
-            datos = json.load(f)
 
-        sumatoria = 0
+def main():
 
-        for d in datos:
-            precio_base = d["precio"]
-            categoria = d["categoria"]
+    registrar_producto(
+        Producto("7501234567890", "Laptop",800, 3, "Tecnología")
+    )
 
-            if categoria == "Tecnología":
-                iva_repetido = precio_base * 0.12
-            else:
-                iva_repetido = precio_base * 0.15
+    registrar_producto(
+        Producto("7509876543210", "Cuaderno", 2.5, 50, "Útiles")
+    )
 
-            sumatoria += iva_repetido
-        print(f"Total de IVA acumulado en inventario: ${sumatoria}")
+    listar_productos()
 
-# Simulación de ejecución del programa
+    reporte_iva()
+
+
 if __name__ == "__main__":
-    print("--- SISTEMA DE INVENTARIO VIEJO V1.0 ---")
-    # Registrar un par de productos de prueba
-    p_pro(1, "123456789", "Laptop", 800.0, 3, "Tecnología")
-    p_pro(1, "987654321", "Cuaderno", 2.50, 50, "Útiles")
-    
-    # Listar productos
-    p_pro(2, "", "", 0, 0, "")
-    
-    # Ver reporte de IVA
-    p_pro(3, "", "", 0, 0, "")
+    main()
